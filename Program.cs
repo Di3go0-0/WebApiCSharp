@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Connection")
     ?? throw new InvalidOperationException("Connection string 'Connection' not found.");
 
-builder.Services.AddDbContext<DbContext>(options => options.UseMySQL(connectionString));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(connectionString));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
