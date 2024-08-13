@@ -1,19 +1,19 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace WebApi.Models
 {
     public class User
-{
-    public int Id { get; set; }
+    {
+        public int Id { get; set; }
 
-    public string? Username { get; set; }
+        [Required]
+        public string Email { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
-    public string? Email { get; set; }
+        [Required]
+        public string Password { get; set; } = string.Empty;
 
-    [Required]
-    public string? Password { get; set; }
-}
-
+        // Propiedad de navegación para las tareas
+        public ICollection<Task> Tasks { get; set; } = new List<Task>();
+    }
 }
