@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Models;
 using WebApi.Services;
+using WebApi.DTOs;
+using WebApi.Utils;
 
 namespace WebApi.Controllers
 {
@@ -9,21 +11,23 @@ namespace WebApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly Cookies _cookies;
 
-        public AuthController(AuthService authService)
+        public AuthController(AuthService authService, Cookies cookies)
         {
             _authService = authService;
+            _cookies = cookies;
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] User user)
+        public IActionResult Register([FromBody] RegisterUserDto registerDto)
         {
-            if (user == null)
+            if (registerDto == null)
             {
                 return BadRequest("Invalid user data.");
             }
 
-            var result = _authService.Register(user);
+            var result = _authService.Register(registerDto);
             if (result == "Email already exists.")
             {
                 return BadRequest(result);
@@ -33,28 +37,24 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] User loginUser)
+        public IActionResult Login([FromBody] LoginUserDto loginDto)
         {
-            if (loginUser.Email == null || loginUser.Password == null)
+            if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
             {
                 return BadRequest("Invalid login data.");
             }
 
-            var (token, error) = _authService.Login(loginUser);
+            var (token, error) = _authService.Login(loginDto);
             if (error != null)
             {
                 return Unauthorized(error);
             }
 
-            var cookieOptions = new CookieOptions
+            var success = _cookies.SetCookie("token", token, Response);
+            if (!success)
             {
-                HttpOnly = true,
-                Secure = false, // Set to true in production
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(1)
-            };
-
-            Response.Cookies.Append("token", token, cookieOptions);
+                return StatusCode(500, "Failed to set cookie.");
+            }
 
             return Ok(new { Token = token });
         }
@@ -62,15 +62,11 @@ namespace WebApi.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            var cookieOptions = new CookieOptions
+            var success = _cookies.SetCookie("token", "", Response, DateTime.UtcNow.AddHours(-1));
+            if (!success)
             {
-                HttpOnly = true,
-                Secure = false, // Set to true in production
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddHours(-1)
-            };
-
-            Response.Cookies.Append("token", "", cookieOptions);
+                return StatusCode(500, "Failed to clear cookie.");
+            }
 
             return Ok(new { Message = "Logged out successfully." });
         }

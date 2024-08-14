@@ -6,6 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using WebApi.Services;
+using WebApi.Utils;
+
+
 
 public class Startup
 {
@@ -20,6 +24,8 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
+        services.AddScoped<AuthService>();
+        services.AddScoped<Cookies>();
 
         // JWT Authentication
         var key = Encoding.ASCII.GetBytes(Configuration["Jwt:Key"]);

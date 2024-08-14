@@ -1,10 +1,7 @@
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using WebApi.Context;
 using WebApi.Models;
-using System.Linq;
+using WebApi.DTOs;
+using WebApi.Utils;
 
 namespace WebApi.Services
 {
@@ -12,50 +9,44 @@ namespace WebApi.Services
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly JWT _jwt;
 
         public AuthService(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
+            _jwt = new JWT(_configuration["Jwt:Key"]);
         }
 
-        public string Register(User user)
+        public string Register(RegisterUserDto registerDto)
         {
-            if (_context.Users.Any(u => u.Email == user.Email))
+            if (_context.Users.Any(u => u.Email == registerDto.Email))
             {
                 return "Email already exists.";
             }
 
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            var user = new User
+            {
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
+            };
+
             _context.Users.Add(user);
             _context.SaveChanges();
-
             return "User registered successfully.";
         }
 
-        public (string, string) Login(User loginUser)
+        public (string, string) Login(LoginUserDto loginDto)
         {
-            var user = _context.Users.SingleOrDefault(u => u.Email == loginUser.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginUser.Password, user.Password))
+            var user = _context.Users.SingleOrDefault(u => u.Email == loginDto.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
                 return (null, "Invalid email or password.");
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Email, user.Email)
-                }),
-                Expires = DateTime.UtcNow.AddHours(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
-
-            return (tokenString, null);
+            var token = _jwt.GenerateToken(user.Email);
+            return (token, null);
         }
     }
 }
