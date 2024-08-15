@@ -1,43 +1,39 @@
-// using Microsoft.AspNetCore.Mvc;
-// using Newtonsoft.Json.Linq;
-// using WebApi.Services;
-// using WebApi.Models;
+using Microsoft.AspNetCore.Mvc;
+using WebApi.Services;
+using WebApi.DTOs;
+// using Microsoft.AspNetCore.Authorization;
 
-// namespace WebApi.Controllers
-// {
-//     [ApiController]
-//     [Route("[controller]")]
-//     public class TaskController : ControllerBase
-//     {
-//         private readonly TaskService _taskService;
+namespace WebApi.Controllers
+{
+    // [Authorize]
+    [ApiController]
+    [Route("[controller]")]
+    public class TaskController : ControllerBase
+    {
+        private readonly TaskService _taskService;
 
-//         public TaskController(TaskService taskService)
-//         {
-//             _taskService = taskService;
-//         }
+        public TaskController(TaskService taskService)
+        {
+            _taskService = taskService;
+        }
 
-//         [HttpPost]
-//         public IActionResult CreateTask([FromBody] JObject data)
-//         {
-//             string title = data["title"]?.ToString();
-//             string description = data["description"]?.ToString();
-//             if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(description))
-//             {
-//                 return BadRequest("Title and description are required.");
-//             }
+        [HttpGet]
+        public IActionResult Hello()
+        {
+            return Ok("Hello World");
+        }
 
-//             var task = new WebApi.Models.Task
-//             {
-//                 Title = title,
-//                 Description = description
-//             };
+        [HttpPost]
+        public IActionResult CreateTask([FromBody] CreateTaskDTO taskDTO)
+        {
+            if (string.IsNullOrEmpty(taskDTO.Title) || string.IsNullOrEmpty(taskDTO.Description))
+            {
+                return BadRequest("The Title and Description fields are required.");
+            }
 
-//             var result = _taskService.CreateTask(task);
-//             if (result == "Task created successfully.")
-//             {
-//                 return Ok(result);
-//             }
-//             return BadRequest(result);
-//         }
-//     }
-// }
+            var result = _taskService.CreateTask(taskDTO);
+
+            return Ok(result);
+        }
+    }
+}

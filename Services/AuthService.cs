@@ -2,6 +2,7 @@ using WebApi.Context;
 using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Utils;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApi.Services
 {
@@ -18,9 +19,9 @@ namespace WebApi.Services
             _jwt = new JWT(_configuration["Jwt:Key"]);
         }
 
-        public string Register(RegisterUserDto registerDto)
+        public async Task<string> RegisterAsync(RegisterUserDto registerDto)
         {
-            if (_context.Users.Any(u => u.Email == registerDto.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
                 return "Email already exists.";
             }
@@ -32,14 +33,14 @@ namespace WebApi.Services
                 Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
             };
 
-            _context.Users.Add(user);
-            _context.SaveChanges();
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
             return "User registered successfully.";
         }
 
-        public (string, string) Login(LoginUserDto loginDto)
+        public async Task<(string, string)> LoginAsync(LoginUserDto loginDto)
         {
-            var user = _context.Users.SingleOrDefault(u => u.Email == loginDto.Email);
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
                 return (null, "Invalid email or password.");

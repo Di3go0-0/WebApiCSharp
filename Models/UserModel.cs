@@ -18,6 +18,6 @@ namespace WebApi.Models
         public string Password { get; set; } = string.Empty;
 
         // Hacer que Tasks sea opcional
-        public ICollection<Task> Tasks { get; set; } = new List<Task>();
+        public ICollection<TaskModel> Tasks { get; set; } = new List<TaskModel>();
     }
 }

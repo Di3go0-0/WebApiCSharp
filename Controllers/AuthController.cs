@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using WebApi.Models;
 using WebApi.Services;
 using WebApi.DTOs;
 using WebApi.Utils;
@@ -20,14 +19,14 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterUserDto registerDto)
+        public async Task<IActionResult> RegisterAsync([FromBody] RegisterUserDto registerDto)
         {
             if (registerDto == null)
             {
                 return BadRequest("Invalid user data.");
             }
 
-            var result = _authService.Register(registerDto);
+            var result = await _authService.RegisterAsync(registerDto);
             if (result == "Email already exists.")
             {
                 return BadRequest(result);
@@ -37,14 +36,14 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginUserDto loginDto)
+        public async Task<IActionResult> LoginAsync([FromBody] LoginUserDto loginDto)
         {
             if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
             {
                 return BadRequest("Invalid login data.");
             }
 
-            var (token, error) = _authService.Login(loginDto);
+            var (token, error) = await _authService.LoginAsync(loginDto);
             if (error != null)
             {
                 return Unauthorized(error);
