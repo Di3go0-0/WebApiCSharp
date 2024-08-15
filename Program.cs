@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApi.Context;
 using WebApi.Services;
+using WebApi.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Services.AddHttpContextAccessor();
 
 // Register AuthService
 builder.Services.AddScoped<AuthService>();
+// Register Cookies
+builder.Services.AddScoped<Cookies>();
+
 // Register TaskService
 // builder.Services.AddScoped<TaskService>();
 

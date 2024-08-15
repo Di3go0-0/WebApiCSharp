@@ -25,7 +25,7 @@ public class Startup
     {
         services.AddControllers();
         services.AddScoped<AuthService>();
-        services.AddScoped<Cookies>();
+        services.AddScoped<Cookies>(); 
 
         // JWT Authentication
         var key = Encoding.ASCII.GetBytes(Configuration["Jwt:Key"]);
