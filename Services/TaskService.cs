@@ -2,8 +2,9 @@ using WebApi.Context;
 using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Utils;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+
+
 
 namespace WebApi.Services
 {
@@ -13,25 +14,80 @@ namespace WebApi.Services
         private readonly IConfiguration _configuration;
         private readonly JWT _jwt;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly Cookies _cookies;
 
         public TaskService(AppDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _configuration = configuration;
-            _jwt = new JWT(_configuration["Jwt:Key"]);
+            var jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key", "JWT key cannot be null");
+            _jwt = new JWT(jwtKey);
             _httpContextAccessor = httpContextAccessor;
+            _cookies = new Cookies();
         }
 
-        public TaskModel CreateTask(CreateTaskDTO taskDTO)
+        public async Task<String> CreateTask(CreateTaskDTO taskDTO)
         {
-            // Implementación del método
-            TaskModel task = new TaskModel
+            try
             {
-                Title = taskDTO.Title,
-                Description = taskDTO.Description,
-                UserId = 1
-            };
-            return task;
+                var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
+                string cookie = _cookies.GetCookie("token", httpContext.Request);
+
+                string email = _jwt.DecodeToken(cookie);
+
+                var user = _context.Users.FirstOrDefault(u => u.Email == email);
+                if (user == null)
+                {
+                    throw new UnauthorizedAccessException("User not found.");
+                }
+
+                int UserId = user.Id;
+
+                TaskModel task = new()
+                {
+                    Title = taskDTO.Title,
+                    Description = taskDTO.Description,
+                    UserId = UserId,
+                    User = _context.Users.Find(UserId) ?? throw new InvalidOperationException("User not found in database.")
+                };
+
+                // Guardar la tarea en la base de datos
+                _context.Tasks.Add(task);
+                await _context.SaveChangesAsync();
+
+                return "Task created successfully.";
+            }
+            catch (System.Exception)
+            {
+                throw;
+            }
+        }
+
+
+
+        public async Task<List<TaskModel>> GetTask()
+        {
+            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
+            string cookie = _cookies.GetCookie("token", httpContext.Request);
+            if (string.IsNullOrEmpty(cookie))
+            {
+                throw new UnauthorizedAccessException("Token is missing.");
+            }
+
+            string email = _jwt.DecodeToken(cookie);
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new UnauthorizedAccessException("Invalid token.");
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.Email == email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("User not found.");
+            }
+
+            int userId = user.Id;
+            return await _context.Tasks.Where(t => t.UserId == userId).ToListAsync();
         }
     }
 }

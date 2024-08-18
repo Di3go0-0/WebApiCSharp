@@ -49,6 +49,11 @@ namespace WebApi.Controllers
                 return Unauthorized(error);
             }
 
+            if (token == null)
+            {
+                return StatusCode(500, "Failed to generate token.");
+            }
+
             var success = _cookies.SetCookie("token", token, Response);
             if (!success)
             {

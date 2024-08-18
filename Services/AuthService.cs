@@ -16,7 +16,8 @@ namespace WebApi.Services
         {
             _context = context;
             _configuration = configuration;
-            _jwt = new JWT(_configuration["Jwt:Key"]);
+            var jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key", "JWT key cannot be null");
+            _jwt = new JWT(jwtKey);
         }
 
         public async Task<string> RegisterAsync(RegisterUserDto registerDto)
@@ -38,14 +39,14 @@ namespace WebApi.Services
             return "User registered successfully.";
         }
 
-        public async Task<(string, string)> LoginAsync(LoginUserDto loginDto)
+               public async Task<(string?, string?)> LoginAsync(LoginUserDto loginDto)
         {
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
                 return (null, "Invalid email or password.");
             }
-
+        
             var token = _jwt.GenerateToken(user.Email);
             return (token, null);
         }

@@ -12,12 +12,12 @@ namespace WebApi.Models
 
         [Required]
         [EmailAddress]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [Required]
         public string Password { get; set; } = string.Empty;
 
         // Hacer que Tasks sea opcional
-        public ICollection<TaskModel> Tasks { get; set; } = new List<TaskModel>();
+        public List<TaskModel> Tasks { get; set; } = new List<TaskModel>();
     }
 }

@@ -44,11 +44,10 @@ namespace WebApi.Utils
                 IssuerSigningKey = new SymmetricSecurityKey(key)
             };
 
-            SecurityToken validatedToken;
-            var principal = tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
             var emailClaim = principal.FindFirst(ClaimTypes.Email);
 
-            return emailClaim?.Value;
+            return emailClaim?.Value ?? throw new InvalidOperationException("Email claim not found");
         }
         
     }

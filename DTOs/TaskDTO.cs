@@ -6,10 +6,10 @@ namespace WebApi.DTOs
     {
         [Required]
         [MaxLength(100)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
         [Required]
         [MaxLength(500)]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
     }
 
     public class UpdateTaskDTO
@@ -23,8 +23,8 @@ namespace WebApi.DTOs
     public class GetTaskDTO
     {
         public int Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public int UserId { get; set; }
     }
 }

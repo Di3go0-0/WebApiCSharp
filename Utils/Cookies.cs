@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using System;using WebApi.Utils; // Para la clase Cookies
-// Agrega la directiva using correspondiente para AuthService
+using System;
 
 namespace WebApi.Utils
 {
@@ -29,7 +28,7 @@ namespace WebApi.Utils
 
         public string GetCookie(string name, HttpRequest request)
         {
-            return request.Cookies[name];
+            return request.Cookies[name] ?? string.Empty;
         }
     }
 }

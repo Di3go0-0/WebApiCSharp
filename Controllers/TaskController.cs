@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Services;
 using WebApi.DTOs;
+using WebApi.Models;
 // using Microsoft.AspNetCore.Authorization;
 
 namespace WebApi.Controllers
@@ -18,20 +19,21 @@ namespace WebApi.Controllers
         }
 
         [HttpGet]
-        public IActionResult Hello()
-        {
-            return Ok("Hello World");
+        public  async Task<IActionResult> GetTask()
+        {   
+            List<TaskModel> tasks = await _taskService.GetTask();
+            return Ok(tasks);
         }
 
         [HttpPost]
-        public IActionResult CreateTask([FromBody] CreateTaskDTO taskDTO)
+        public async Task<IActionResult> CreateTask([FromBody] CreateTaskDTO taskDTO)
         {
             if (string.IsNullOrEmpty(taskDTO.Title) || string.IsNullOrEmpty(taskDTO.Description))
             {
                 return BadRequest("The Title and Description fields are required.");
             }
 
-            var result = _taskService.CreateTask(taskDTO);
+            string result =  await _taskService.CreateTask(taskDTO);
 
             return Ok(result);
         }
