@@ -18,7 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(connecti
 
 // Registrar servicios
 builder.Services.AddControllers();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<Cookies>();
 
 // Validar y registrar JWT

@@ -1,12 +1,13 @@
 using WebApi.DTOs;
 using WebApi.Utils;
 using WebApi.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace WebApi.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly IConfiguration _configuration;
         private readonly JWT _jwt;
@@ -29,39 +30,34 @@ namespace WebApi.Services
                 return "Email already exists.";
             }
 
-            string mensaje = await _authRepository.RegisterAsync(registerDto);
-            if (mensaje.Contains("Database error") || mensaje.Contains("Unexpected error"))
-            {
-                return mensaje;
-            }
-
-            return "User registered successfully.";
+            return await _authRepository.RegisterAsync(registerDto);
         }
 
         public async Task<string> LoginAsync(LoginUserDto loginDto, HttpResponse response)
         {
-            var user = await _authRepository.GetUserAsync(loginDto.Email);
-            if (user == null)
-            {
-                return "User not found.";
-            }
-
             var authenticatedUser = await _authRepository.LoginAsync(loginDto);
             if (authenticatedUser == null)
             {
-                return "Invalid password.";
+                return "Invalid credentials.";
             }
 
             var token = _jwt.GenerateToken(authenticatedUser.Email);
-
-            var success = _cookies.SetCookie("token", token, response);
-
-            if (!success)
+            if (!_cookies.SetCookie("token", token, response))
             {
                 return "Failed to generate token.";
             }
 
             return "Logged in successfully.";
+        }
+
+        public string Logout(HttpResponse response)
+        {
+            if (!_cookies.SetCookie("token", "", response, DateTime.UtcNow.AddHours(-1)))
+            {
+                return "Failed to remove token.";
+            }
+
+            return "Logged out successfully.";
         }
     }
 }

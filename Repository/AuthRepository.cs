@@ -2,7 +2,6 @@ using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Interfaces;
 using WebApi.Context;
-using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,48 +23,26 @@ namespace WebApi.Repository
 
         public async Task<string> RegisterAsync(RegisterUserDto registerDto)
         {
-            try
+            var user = new User
             {
-                var user = new User
-                {
-                    Username = registerDto.Username,
-                    Email = registerDto.Email,
-                    Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
-                };
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
+            };
 
-                await _context.Users.AddAsync(user);
-                await _context.SaveChangesAsync();
-                return "User registered successfully.";
-            }
-            catch (DbUpdateException ex)
-            {
-                // Manejo de excepciones relacionadas con la base de datos
-                return $"Database error: {ex.Message}";
-            }
-            catch (Exception ex)
-            {
-                // Manejo de otras excepciones
-                return $"Unexpected error: {ex.Message}";
-            }
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+            return "User registered successfully.";
         }
 
         public async Task<User?> LoginAsync(LoginUserDto loginDto)
         {
-            try
-            {
-                var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
-                if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
-                {
-                    return null;
-                }
-                return user;
-            }
-            catch 
+            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
+            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
             {
                 return null;
             }
+            return user;
         }
-
-
     }
 }

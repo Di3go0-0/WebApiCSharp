@@ -3,23 +3,17 @@ using WebApi.Services;
 using WebApi.DTOs;
 using WebApi.Models;
 using WebApi.Interfaces;
-// using Microsoft.AspNetCore.Authorization;
 
 namespace WebApi.Controllers
 {
-    // [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class TaskController : ControllerBase
     {
-        private readonly AuthenticationService _authenticationService;
         private readonly TaskService _taskService;
-        private readonly ITaskRepository _taskRepository;
 
-        public TaskController(AuthenticationService authenticationService, ITaskRepository taskRepository, TaskService taskService)
+        public TaskController(TaskService taskService)
         {
-            _authenticationService = authenticationService;
-            _taskRepository = taskRepository;
             _taskService = taskService;
         }
 
@@ -37,20 +31,16 @@ namespace WebApi.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while retrieving tasks.", error = ex.Message });
             }
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskDTO taskDTO)
         {
-
             try
             {
-                int currentUserId = _authenticationService.AuthenticateUser();
-
-                string response = await _taskRepository.CreateTaskAsync(taskDTO, currentUserId);
-
+                string response = await _taskService.CreateTaskAsync(taskDTO);
                 return Ok(new { message = response });
             }
             catch (InvalidOperationException ex)
@@ -61,44 +51,33 @@ namespace WebApi.Controllers
             {
                 return Unauthorized(new { message = ex.Message });
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
-
-                return StatusCode(500, new { message = "Unexpected error." });
+                return StatusCode(500, new { message = "An error occurred while creating the task.", error = ex.Message });
             }
-
-
         }
+
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetTaskByID(string id)
+        public async Task<IActionResult> GetTaskById(string id)
         {
             try
             {
-                int taskId = int.Parse(id);
+                if (!int.TryParse(id, out int taskId))
+                {
+                    return BadRequest(new { message = "Invalid task ID format." });
+                }
 
                 TaskModel? task = await _taskService.GetTaskAsync(taskId);
                 if (task == null)
                 {
-                    return NotFound(new { message = "Task not found." });
+                    return NotFound(new { message = "Task not found or not associated with the user." });
                 }
 
-                return Ok(new
-                {
-                    Message = "Task found.",
-                    data = task
-                });
+                return Ok(new { message = "Task found.", data = task });
             }
-            catch (InvalidOperationException)
+            catch (Exception ex)
             {
-                return NotFound(new { message = "Task not found." });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(new { message = "Task is not associated with the user." });
-            }
-            catch (System.Exception)
-            {
-                return StatusCode(500, new { message = "Unexpected error." });
+                return StatusCode(500, new { message = "An error occurred while retrieving the task.", error = ex.Message });
             }
         }
 
@@ -118,38 +97,35 @@ namespace WebApi.Controllers
                     return NotFound(new { message = "Task not found or not associated with the user." });
                 }
 
-                return Ok(new
-                {
-                    Message = "Task updated.",
-                    Data = taskUpdated
-                });
+                return Ok(new { message = "Task updated.", data = taskUpdated });
             }
-            catch (UnauthorizedAccessException)
+            catch (Exception ex)
             {
-                return Unauthorized(new { message = "Task is not associated with the user." });
-            }
-            catch (InvalidOperationException)
-            {
-                return NotFound(new { message = "Task not found." });
-            }
-            catch (System.Exception ex)
-            {
-                // Puedes loggear el error aquí si es necesario
-                return StatusCode(500, new { message = "Unexpected error.", error = ex.Message });
+                return StatusCode(500, new { message = "An error occurred while updating the task.", error = ex.Message });
             }
         }
-
 
         [HttpDelete("{taskId}")]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
-            string reponse = await _taskService.DeleteTaskAsync(int.Parse(taskId));
-            if (reponse.Contains("Task deleted successfully."))
+            try
             {
-                return Ok(new { message = reponse });
-            }
-            return NotFound(new { message = reponse });
-        }
+                if (!int.TryParse(taskId, out int parsedTaskId))
+                {
+                    return BadRequest(new { message = "Invalid task ID format." });
+                }
 
+                string response = await _taskService.DeleteTaskAsync(parsedTaskId);
+                if (response.Contains("successfully"))
+                {
+                    return Ok(new { message = response });
+                }
+                return NotFound(new { message = response });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while deleting the task.", error = ex.Message });
+            }
+        }
     }
 }

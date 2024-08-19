@@ -4,12 +4,12 @@ using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Interfaces;
 
-
 namespace WebApi.Repository
 {
     public class TaskRepository : ITaskRepository
     {
         private readonly AppDbContext _context;
+
         public TaskRepository(AppDbContext context)
         {
             _context = context;
@@ -23,38 +23,39 @@ namespace WebApi.Repository
                             .Where(task => task.UserId == userId)
                             .ToListAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                return [];
+                // Loggear el error si es necesario
+                throw new Exception("An error occurred while retrieving tasks.", ex);
             }
         }
-        public async Task<String> CreateTaskAsync(CreateTaskDTO taskDTO, int UserId)
+
+        public async Task<string> CreateTaskAsync(CreateTaskDTO taskDTO, int userId)
         {
             try
             {
-                User user = await _context.Users.FindAsync(UserId) ?? throw new InvalidOperationException("User not found in database.");
+                User user = await _context.Users.FindAsync(userId)
+                            ?? throw new InvalidOperationException("User not found in database.");
 
                 TaskModel task = new()
                 {
                     Title = taskDTO.Title,
                     Description = taskDTO.Description,
-                    UserId = UserId,
+                    UserId = userId,
                     User = user
-
                 };
 
                 _context.Tasks.Add(task);
                 await _context.SaveChangesAsync();
                 return "Task created successfully.";
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
-                return "Error creating task. Database error.";
+                throw new Exception("Database error while creating task.", ex);
             }
             catch (Exception ex)
             {
-                return $"Unexpected error: {ex.Message}";
+                throw new Exception("Unexpected error occurred while creating task.", ex);
             }
         }
 
@@ -63,7 +64,7 @@ namespace WebApi.Repository
             try
             {
                 TaskModel task = await _context.Tasks.FindAsync(taskId)
-                ?? throw new InvalidOperationException("Task not found in database.");
+                                ?? throw new InvalidOperationException("Task not found in database.");
 
                 if (task.UserId != userId)
                 {
@@ -80,10 +81,9 @@ namespace WebApi.Repository
             {
                 return null;
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                throw new Exception("An error occurred while retrieving the task.", ex);
             }
         }
 
@@ -91,8 +91,8 @@ namespace WebApi.Repository
         {
             try
             {
-                TaskModel taskModel = _context.Tasks.Find(taskId)
-                    ?? throw new InvalidOperationException("Task not found in database.");
+                TaskModel taskModel = await _context.Tasks.FindAsync(taskId)
+                                ?? throw new InvalidOperationException("Task not found in database.");
 
                 if (taskModel.UserId != userId)
                 {
@@ -107,21 +107,17 @@ namespace WebApi.Repository
 
                 return taskModel;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                // Aquí solo capturas excepciones genéricas que no han sido manejadas previamente
                 throw new Exception("An error occurred while updating the task.", ex);
             }
         }
 
-
-
-
-        public async Task<string> DeleteTaskAsync(int taskid, int userId)
+        public async Task<string> DeleteTaskAsync(int taskId, int userId)
         {
             try
             {
-                var task = await _context.Tasks.FindAsync(taskid);
+                var task = await _context.Tasks.FindAsync(taskId);
                 if (task == null)
                 {
                     throw new ArgumentNullException(nameof(task), "Task not found in database.");
@@ -130,28 +126,23 @@ namespace WebApi.Repository
                 {
                     throw new UnauthorizedAccessException("Task is not associated with the user.");
                 }
+
                 _context.Tasks.Remove(task);
                 await _context.SaveChangesAsync();
                 return "Task deleted successfully.";
             }
-            catch (ArgumentNullException)
+            catch (ArgumentNullException ex)
             {
-                return "Task not found in database";
+                throw new Exception(ex.Message, ex);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return "Task is not associated with the user.";
+                throw new Exception(ex.Message, ex);
             }
             catch (Exception ex)
             {
-                return $"An error occurred while deleting the task: {ex.Message}";
+                throw new Exception("An error occurred while deleting the task.", ex);
             }
         }
-
-
-
-
-
-
     }
 }
