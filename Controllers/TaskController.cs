@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using WebApi.Services;
 using WebApi.DTOs;
 using WebApi.Models;
 using WebApi.Interfaces;
@@ -10,9 +9,9 @@ namespace WebApi.Controllers
     [Route("[controller]")]
     public class TaskController : ControllerBase
     {
-        private readonly TaskService _taskService;
+        private readonly ITaskService _taskService;
 
-        public TaskController(TaskService taskService)
+        public TaskController(ITaskService taskService)
         {
             _taskService = taskService;
         }

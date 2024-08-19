@@ -29,7 +29,7 @@ builder.Services.AddScoped<JWT>(provider => new JWT(jwtKey));
 builder.Services.AddScoped<JWT>(provider => new JWT(builder.Configuration["Jwt:Key"]!));
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<ITaskService ,TaskService>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddHttpContextAccessor();
 

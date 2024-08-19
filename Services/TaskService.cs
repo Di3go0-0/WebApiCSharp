@@ -4,7 +4,7 @@ using WebApi.Interfaces;
 
 namespace WebApi.Services
 {
-    public class TaskService
+    public class TaskService : ITaskService
     {
         private readonly AuthenticationService _authenticationService;
         private readonly ITaskRepository _taskRepository;
