@@ -22,8 +22,8 @@ namespace WebApi.Context
                 entity.HasIndex(u => u.Email)
                     .IsUnique(); // Índice único para Email
 
-                entity.HasIndex(u => u.Username)
-                    .IsUnique(); // Índice único para Username
+                entity.HasIndex(u => u.Username);
+                    
 
                 entity.Property(u => u.Email)
                     .IsRequired()

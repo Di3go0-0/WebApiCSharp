@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using WebApi.Services;
 using WebApi.DTOs;
 using WebApi.Utils;
+using WebApi.Interfaces;
+using WebApi.Models;
 
 namespace WebApi.Controllers
 {
@@ -17,19 +19,22 @@ namespace WebApi.Controllers
             _authService = authService;
             _cookies = cookies;
         }
+      
+        // [HttpGet("{email}")]
+        // public async Task<IActionResult> GetTaskByID(string email)
+        // {
+        //     User user = await _authRepository.GetUserAsync(email);
+        //     return Ok(user);
+        // }
 
         [HttpPost("register")]
         public async Task<IActionResult> RegisterAsync([FromBody] RegisterUserDto registerDto)
         {
-            if (registerDto == null)
-            {
-                return BadRequest("Invalid user data.");
-            }
 
             var result = await _authService.RegisterAsync(registerDto);
             if (result == "Email already exists.")
             {
-                return BadRequest(result);
+                return BadRequest(new { Message = result });
             }
 
             return Ok(new { Message = result });
@@ -38,26 +43,22 @@ namespace WebApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> LoginAsync([FromBody] LoginUserDto loginDto)
         {
-            if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
-            {
-                return BadRequest("Invalid login data.");
-            }
-
+            
             var (token, error) = await _authService.LoginAsync(loginDto);
             if (error != null)
             {
-                return Unauthorized(error);
+                return Unauthorized(new { Message = error });
             }
 
             if (token == null)
             {
-                return StatusCode(500, "Failed to generate token.");
+                return StatusCode(500, new {Message = "Failed to generate token."});
             }
 
             var success = _cookies.SetCookie("token", token, Response);
             if (!success)
             {
-                return StatusCode(500, "Failed to set cookie.");
+                return StatusCode(500, new {Message = "Failed to set cookie."});
             }
 
             return Ok(new { Token = token });

@@ -3,6 +3,7 @@ using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Utils;
 using Microsoft.EntityFrameworkCore;
+using WebApi.Interfaces;
 
 namespace WebApi.Services
 {
@@ -11,42 +12,36 @@ namespace WebApi.Services
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly JWT _jwt;
+        private readonly IAuthRepository _authRepository;
 
-        public AuthService(AppDbContext context, IConfiguration configuration)
+        public AuthService(AppDbContext context, IConfiguration configuration, IAuthRepository authRepository)
         {
             _context = context;
             _configuration = configuration;
             var jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key", "JWT key cannot be null");
             _jwt = new JWT(jwtKey);
+            _authRepository = authRepository;
         }
 
         public async Task<string> RegisterAsync(RegisterUserDto registerDto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
+            if (await _authRepository.GetUserAsync(registerDto.Email) != null)
             {
                 return "Email already exists.";
             }
 
-            var user = new User
-            {
-                Username = registerDto.Username,
-                Email = registerDto.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
-            };
-
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
+            string mensaje = await _authRepository.RegisterAsync(registerDto);
             return "User registered successfully.";
         }
 
-               public async Task<(string?, string?)> LoginAsync(LoginUserDto loginDto)
+        public async Task<(string?, string?)> LoginAsync(LoginUserDto loginDto)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+            var user = await _authRepository.LoginAsync(loginDto);
+            if (user == null)
             {
                 return (null, "Invalid email or password.");
             }
-        
+
             var token = _jwt.GenerateToken(user.Email);
             return (token, null);
         }
