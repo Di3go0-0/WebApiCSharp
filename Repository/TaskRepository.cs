@@ -3,12 +3,7 @@ using WebApi.Context;
 using WebApi.Models;
 using WebApi.DTOs;
 using WebApi.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using System.Linq.Expressions;
+
 
 namespace WebApi.Repository
 {
@@ -28,40 +23,13 @@ namespace WebApi.Repository
                             .Where(task => task.UserId == userId)
                             .ToListAsync();
             }
-            catch (System.Exception)
+            catch (Exception)
             {
 
-                throw new Exception("An error occurred while getting the tasks.");
+                return [];
             }
         }
-
-        public async Task<TaskModel> GetTaskAsync(int userId, int taskId)
-        {
-            try
-            {
-                TaskModel task = await _context.Tasks.FindAsync(taskId) ?? throw new InvalidOperationException("Task not found in database.");
-                if (task.UserId != userId)
-                {
-                    throw new UnauthorizedAccessException("Task is not associated with the user.");
-                }
-
-                return task;
-            }
-            catch (InvalidOperationException ex)
-            {
-                throw new Exception($"An error occurred while getting the task: {ex.Message}");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                throw new Exception($"An error occurred while getting the task: {ex.Message}");
-            }
-            catch (System.Exception ex)
-            {
-                throw new Exception($"An error occurred while getting the task: {ex.Message}");
-            }
-        }
-
-        public async Task<TaskModel> CreateTaskAsync(CreateTaskDTO taskDTO, int UserId)
+        public async Task<String> CreateTaskAsync(CreateTaskDTO taskDTO, int UserId)
         {
             try
             {
@@ -78,13 +46,76 @@ namespace WebApi.Repository
 
                 _context.Tasks.Add(task);
                 await _context.SaveChangesAsync();
+                return "Task created successfully.";
+            }
+            catch (DbUpdateException)
+            {
+                return "Error creating task. Database error.";
+            }
+            catch (Exception ex)
+            {
+                return $"Unexpected error: {ex.Message}";
+            }
+        }
+
+        public async Task<TaskModel?> GetTaskAsync(int userId, int taskId)
+        {
+            try
+            {
+                TaskModel task = await _context.Tasks.FindAsync(taskId)
+                ?? throw new InvalidOperationException("Task not found in database.");
+
+                if (task.UserId != userId)
+                {
+                    throw new UnauthorizedAccessException("Task is not associated with the user.");
+                }
+
                 return task;
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
             }
             catch (System.Exception)
             {
-                throw new Exception("An error occurred while creating the task.");
+
+                throw;
             }
         }
+
+        public async Task<TaskModel> UpdateTaskAsync(int taskId, UpdateTaskDTO task, int userId)
+        {
+            try
+            {
+                TaskModel taskModel = _context.Tasks.Find(taskId)
+                    ?? throw new InvalidOperationException("Task not found in database.");
+
+                if (taskModel.UserId != userId)
+                {
+                    throw new UnauthorizedAccessException("Task is not associated with the user.");
+                }
+
+                taskModel.Title = task.Title;
+                taskModel.Description = task.Description;
+
+                _context.Tasks.Update(taskModel);
+                await _context.SaveChangesAsync();
+
+                return taskModel;
+            }
+            catch (System.Exception ex)
+            {
+                // Aquí solo capturas excepciones genéricas que no han sido manejadas previamente
+                throw new Exception("An error occurred while updating the task.", ex);
+            }
+        }
+
+
+
 
         public async Task<string> DeleteTaskAsync(int taskid, int userId)
         {
@@ -103,17 +134,17 @@ namespace WebApi.Repository
                 await _context.SaveChangesAsync();
                 return "Task deleted successfully.";
             }
-            catch (ArgumentNullException ex)
+            catch (ArgumentNullException)
             {
-                throw new Exception($"An error occurred while deleting the task: {ex.Message}");
+                return "Task not found in database";
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                throw new Exception($"An error occurred while deleting the task: {ex.Message}");
+                return "Task is not associated with the user.";
             }
             catch (Exception ex)
             {
-                throw new Exception("An unexpected error occurred while deleting the task.", ex);
+                return $"An error occurred while deleting the task: {ex.Message}";
             }
         }
 
@@ -121,27 +152,6 @@ namespace WebApi.Repository
 
 
 
-        public Task<TaskModel> UpdateTaskAsync(int taskId, UpdateTaskDTO task, int userId)
-        {
-            try
-            {
-                TaskModel taskModel = _context.Tasks.Find(taskId) ?? throw new InvalidOperationException("Task not found in database.");
-                if (taskModel.UserId != userId)
-                {
-                    throw new UnauthorizedAccessException("Task is not associated with the user.");
-                }
-                taskModel.Title = task.Title;
-                taskModel.Description = task.Description;
 
-                _context.Tasks.Update(taskModel);
-                _context.SaveChanges();
-                return Task.FromResult(taskModel);
-            }
-            catch (System.Exception)
-            {
-
-                throw new Exception("An error occurred while updating the task.");
-            }
-        }
     }
 }

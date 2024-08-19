@@ -1,8 +1,8 @@
 using WebApi.Context;
 using WebApi.Models;
 using WebApi.DTOs;
-using WebApi.Utils;
-using Microsoft.EntityFrameworkCore;
+using WebApi.Interfaces;
+
 
 
 
@@ -10,117 +10,96 @@ namespace WebApi.Services
 {
     public class TaskService
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
-        private readonly JWT _jwt;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly Cookies _cookies;
+        private readonly AuthenticationService _authenticationService;
+        private readonly ITaskRepository _taskRepository;
 
-        public TaskService(AppDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
+        public TaskService(AppDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, ITaskRepository taskRepository, AuthenticationService authenticationService)
         {
-            _context = context;
-            _configuration = configuration;
-            var jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key", "JWT key cannot be null");
-            _jwt = new JWT(jwtKey);
-            _httpContextAccessor = httpContextAccessor;
-            _cookies = new Cookies();
+            
+            _taskRepository = taskRepository;
+            _authenticationService = authenticationService;
+
+        }
+        public async Task<List<TaskModel>> GetTasksAsync()
+        {
+            int userId = _authenticationService.AuthenticateUser();
+            List<TaskModel> list = await _taskRepository.GetTasksAsync(userId);
+            return list;
         }
 
         public async Task<String> CreateTask(CreateTaskDTO taskDTO)
         {
             try
             {
-                var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
-                string cookie = _cookies.GetCookie("token", httpContext.Request);
+                int userId = _authenticationService.AuthenticateUser();
+                String response = await _taskRepository.CreateTaskAsync(taskDTO, userId);
 
-                string email = _jwt.DecodeToken(cookie);
+                return response;
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ex.Message;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return ex.Message;
+            }
+            catch (Exception ex)
+            {
+                return $"Unexpected error: {ex.Message}";
+            }
+        }
 
-                var user = _context.Users.FirstOrDefault(u => u.Email == email);
-                if (user == null)
-                {
-                    throw new UnauthorizedAccessException("User not found.");
-                }
 
-                int UserId = user.Id;
 
-                TaskModel task = new()
-                {
-                    Title = taskDTO.Title,
-                    Description = taskDTO.Description,
-                    UserId = UserId,
-                    User = await _context.Users.FindAsync(UserId) ?? throw new InvalidOperationException("User not found in database.")
-                };
+        public async Task<TaskModel?> GetTaskAsync(int taskId)
+        {
+            try
+            {
+                int currentUserId = _authenticationService.AuthenticateUser();
+                TaskModel? task = await _taskRepository.GetTaskAsync(currentUserId, taskId);
+                return task;
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return null;
+            }
+        }
 
-                // Guardar la tarea en la base de datos
-                _context.Tasks.Add(task);
-                await _context.SaveChangesAsync();
+        public async Task<TaskModel?> UpdateTaskAsync(int taskId, UpdateTaskDTO task)
+        {
+            int currentUserId = _authenticationService.AuthenticateUser();
+            TaskModel taskModel = await _taskRepository.UpdateTaskAsync(taskId, task, currentUserId);
+            return taskModel;
+        }
 
-                return "Task created successfully.";
+
+        public async Task<string> DeleteTaskAsync(int taskId)
+        {
+            try
+            {
+                int currentUserId = _authenticationService.AuthenticateUser();
+                string response = await _taskRepository.DeleteTaskAsync(taskId, currentUserId);
+                return response;
+            }
+            catch (ArgumentNullException)
+            {
+                return "Task not found in database.";
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return "Task is not associated with the user.";
             }
             catch (System.Exception)
             {
-                throw;
+                return "An error occurred while deleting the task.";
             }
+
         }
-
-
-
-        public async Task<List<TaskModel>> GetTaskAsync()
-        {
-            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
-            string cookie = _cookies.GetCookie("token", httpContext.Request);
-            if (string.IsNullOrEmpty(cookie))
-            {
-                throw new UnauthorizedAccessException("Token is missing.");
-            }
-
-            string email = _jwt.DecodeToken(cookie);
-            if (string.IsNullOrEmpty(email))
-            {
-                throw new UnauthorizedAccessException("Invalid token.");
-            }
-
-            var user = _context.Users.FirstOrDefault(u => u.Email == email) ?? throw new UnauthorizedAccessException("User not found.");
-            int userId = user.Id;
-            return await _context.Tasks.Where(t => t.UserId == userId).ToListAsync();
-        }
-
-        public async Task<TaskModel> GetTaskAsync(string Id)
-        {
-            int id = int.Parse(Id);
-            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("httpContext is null");
-            string cookie = _cookies.GetCookie("token", httpContext.Request);
-            if (string.IsNullOrEmpty(cookie))
-            {
-                throw new UnauthorizedAccessException("Token is missing.");
-            }
-            string email = _jwt.DecodeToken(cookie);
-            if (string.IsNullOrEmpty(email))
-            {
-                throw new UnauthorizedAccessException("Invalid token.");
-            }
-            var user = _context.Users.FirstOrDefault(u => u.Email == email) ?? throw new UnauthorizedAccessException("User not found.");
-
-            var task = await _context.Tasks.FindAsync(id) ?? throw new InvalidOperationException("Task not found.");
-
-            if (task.UserId != user.Id)
-            {
-                throw new UnauthorizedAccessException("You are not authorized to view this task.");
-            }
-            return task;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
