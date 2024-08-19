@@ -48,7 +48,7 @@ namespace WebApi.Services
                     Title = taskDTO.Title,
                     Description = taskDTO.Description,
                     UserId = UserId,
-                    User = _context.Users.Find(UserId) ?? throw new InvalidOperationException("User not found in database.")
+                    User = await _context.Users.FindAsync(UserId) ?? throw new InvalidOperationException("User not found in database.")
                 };
 
                 // Guardar la tarea en la base de datos
@@ -65,7 +65,7 @@ namespace WebApi.Services
 
 
 
-        public async Task<List<TaskModel>> GetTask()
+        public async Task<List<TaskModel>> GetTaskAsync()
         {
             var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
             string cookie = _cookies.GetCookie("token", httpContext.Request);
@@ -80,14 +80,59 @@ namespace WebApi.Services
                 throw new UnauthorizedAccessException("Invalid token.");
             }
 
-            var user = _context.Users.FirstOrDefault(u => u.Email == email);
-            if (user == null)
-            {
-                throw new UnauthorizedAccessException("User not found.");
-            }
-
+            var user = _context.Users.FirstOrDefault(u => u.Email == email) ?? throw new UnauthorizedAccessException("User not found.");
             int userId = user.Id;
             return await _context.Tasks.Where(t => t.UserId == userId).ToListAsync();
         }
+
+        public async Task<TaskModel> GetTaskAsync(string Id)
+        {
+            int id = int.Parse(Id);
+            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("httpContext is null");
+            string cookie = _cookies.GetCookie("token", httpContext.Request);
+            if (string.IsNullOrEmpty(cookie))
+            {
+                throw new UnauthorizedAccessException("Token is missing.");
+            }
+            string email = _jwt.DecodeToken(cookie);
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new UnauthorizedAccessException("Invalid token.");
+            }
+            var user = _context.Users.FirstOrDefault(u => u.Email == email) ?? throw new UnauthorizedAccessException("User not found.");
+
+            var task = await _context.Tasks.FindAsync(id) ?? throw new InvalidOperationException("Task not found.");
+
+            if (task.UserId != user.Id)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to view this task.");
+            }
+            return task;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }

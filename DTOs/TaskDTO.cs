@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.InteropServices;
 
 namespace WebApi.DTOs
 {
@@ -18,13 +19,5 @@ namespace WebApi.DTOs
         public string Title { get; set; } = string.Empty;
         [MaxLength(500)]
         public string Description { get; set; } = string.Empty;
-    }
-
-    public class GetTaskDTO
-    {
-        public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public int UserId { get; set; }
     }
 }

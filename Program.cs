@@ -5,6 +5,8 @@ using System.Text;
 using WebApi.Context;
 using WebApi.Services;
 using WebApi.Utils;
+using WebApi.Repository;
+using WebApi.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,11 +17,14 @@ var connectionString = builder.Configuration.GetConnectionString("Connection")
 builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(connectionString));
 
 // Registrar servicios
+builder.Services.AddControllers();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Cookies>();
+builder.Services.AddScoped<JWT>(provider => new JWT(builder.Configuration["Jwt:Key"]));
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers();
 
 // Configurar autenticación JWT
 var jwtKey = builder.Configuration["Jwt:Key"];
