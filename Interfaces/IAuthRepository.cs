@@ -9,7 +9,7 @@ namespace WebApi.Interfaces
 {
         public interface IAuthRepository
         {
-            public Task<User> GetUserAsync(string Email);
+            public Task<User?> GetUserAsync(string Email);
             public Task<string> RegisterAsync(RegisterUserDto user);
             public Task<User?> LoginAsync(LoginUserDto user);
         }

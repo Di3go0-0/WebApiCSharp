@@ -19,7 +19,7 @@ namespace WebApi.Controllers
             _authService = authService;
             _cookies = cookies;
         }
-      
+
         // [HttpGet("{email}")]
         // public async Task<IActionResult> GetTaskByID(string email)
         // {
@@ -36,33 +36,35 @@ namespace WebApi.Controllers
             {
                 return BadRequest(new { Message = result });
             }
+            if (result.Contains("Database error") || result.Contains("Unexpected error"))
+            {
+                return StatusCode(500, new { Message = result });
+            }
 
             return Ok(new { Message = result });
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> LoginAsync([FromBody] LoginUserDto loginDto)
+        public async Task<IActionResult> Login([FromBody] LoginUserDto loginDto)
         {
-            
-            var (token, error) = await _authService.LoginAsync(loginDto);
-            if (error != null)
+            var result = await _authService.LoginAsync(loginDto, Response);
+
+            if (result == "Logged in successfully.")
             {
-                return Unauthorized(new { Message = error });
+                return Ok(new { Message = result });
+            }
+            else if (result == "User not found." || result == "Invalid password.")
+            {
+                return Unauthorized(new { Message = result });
+            }
+            else if (result == "Failed to generate token.")
+            {
+                return StatusCode(500, new { Message = result });
             }
 
-            if (token == null)
-            {
-                return StatusCode(500, new {Message = "Failed to generate token."});
-            }
-
-            var success = _cookies.SetCookie("token", token, Response);
-            if (!success)
-            {
-                return StatusCode(500, new {Message = "Failed to set cookie."});
-            }
-
-            return Ok(new { Token = token });
+            return StatusCode(500, new { Message = "An unexpected error occurred." });
         }
+
 
         [HttpPost("logout")]
         public IActionResult Logout()
@@ -70,7 +72,7 @@ namespace WebApi.Controllers
             var success = _cookies.SetCookie("token", "", Response, DateTime.UtcNow.AddHours(-1));
             if (!success)
             {
-                return StatusCode(500, "Failed to clear cookie.");
+                return StatusCode(500, new { Message = "Failed to clear cookie." });
             }
 
             return Ok(new { Message = "Logged out successfully." });

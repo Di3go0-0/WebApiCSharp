@@ -17,42 +17,55 @@ namespace WebApi.Repository
             _context = context;
         }
 
-        public async Task<User> GetUserAsync(string Email)
+        public async Task<User?> GetUserAsync(string email)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<string> RegisterAsync(RegisterUserDto registerDto)
         {
             try
             {
-                User user = await _context.Users.FirstOrDefaultAsync(u => u.Email == Email) ?? throw new Exception("User not found.");
-                return user;
+                var user = new User
+                {
+                    Username = registerDto.Username,
+                    Email = registerDto.Email,
+                    Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
+                };
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+                return "User registered successfully.";
             }
-            catch (Exception)
+            catch (DbUpdateException ex)
             {
-                throw new Exception("An error occurred while getting the user.");
+                // Manejo de excepciones relacionadas con la base de datos
+                return $"Database error: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                // Manejo de otras excepciones
+                return $"Unexpected error: {ex.Message}";
             }
         }
 
         public async Task<User?> LoginAsync(LoginUserDto loginDto)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+            try
+            {
+                var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == loginDto.Email);
+                if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+                {
+                    return null;
+                }
+                return user;
+            }
+            catch 
             {
                 return null;
             }
-            return user;
         }
 
-        public async Task<string> RegisterAsync(RegisterUserDto registerDto)
-        {
-            
-            var user = new User
-            {
-                Username = registerDto.Username,
-                Email = registerDto.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
-            };
 
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-            return "User registered successfully.";
-        }
     }
 }

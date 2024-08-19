@@ -20,19 +20,18 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseMySQL(connecti
 builder.Services.AddControllers();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Cookies>();
-builder.Services.AddScoped<JWT>(provider => new JWT(builder.Configuration["Jwt:Key"]));
+
+// Validar y registrar JWT
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("JWT key is missing in configuration.");
+builder.Services.AddScoped<JWT>(provider => new JWT(jwtKey));
+
+builder.Services.AddScoped<JWT>(provider => new JWT(builder.Configuration["Jwt:Key"]!));
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<AuthenticationService>();
 builder.Services.AddHttpContextAccessor();
-
-// Configurar autenticación JWT
-var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrEmpty(jwtKey))
-{
-    throw new InvalidOperationException("JWT key is missing in configuration.");
-}
 
 var key = Encoding.ASCII.GetBytes(jwtKey);
 builder.Services.AddAuthentication(options =>
