@@ -46,7 +46,11 @@ namespace WebApi.Controllers
             var result = _authService.Logout(Response);
             if (result == "Logged out successfully.")
             {
-                return Ok(new { Message = result });
+                return Ok(new
+                {
+                    Message = result,
+                    Token = ""
+                });
             }
 
             return StatusCode(500, new { Message = result });

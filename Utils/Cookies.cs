@@ -11,7 +11,7 @@ namespace WebApi.Utils
             {
                 var cookieOptions = new CookieOptions
                 {
-                    HttpOnly = true,
+                    HttpOnly = false,
                     Secure = false, // Set to true in production
                     SameSite = SameSiteMode.Strict,
                     Expires = expires ?? DateTime.UtcNow.AddHours(1)
