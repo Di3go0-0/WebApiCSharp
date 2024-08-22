@@ -24,7 +24,7 @@ namespace WebApi.Controllers
                 return BadRequest(new { Message = result });
             }
 
-            return Ok(new { Message = result });
+            return StatusCode(201,new { Message = result });
         }
 
         [HttpPost("login")]
@@ -54,6 +54,25 @@ namespace WebApi.Controllers
             }
 
             return StatusCode(500, new { Message = result });
+        }
+
+        [HttpPost("validate")]
+        public IActionResult ValidateToken()
+        {
+            try
+            {
+                var result = _authService.ValidateToken();
+                if (result)
+                {
+                    return Ok(new { Message = "Token is valid." });
+                }
+
+                return Unauthorized(new { Message = "Token is invalid." });
+            }
+            catch (System.Exception)
+            {
+                return Unauthorized(new { Message = "Token is invalid." });
+            }
         }
     }
 }

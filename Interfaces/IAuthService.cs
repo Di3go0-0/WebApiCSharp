@@ -12,5 +12,6 @@ namespace WebApi.Interfaces
         public Task<string> RegisterAsync(RegisterUserDto registerDto);
         public Task<string> LoginAsync(LoginUserDto loginDto, HttpResponse response);
         public string Logout(HttpResponse response);
+        public bool ValidateToken();
     }
 }

@@ -13,14 +13,16 @@ namespace WebApi.Services
         private readonly JWT _jwt;
         private readonly Cookies _cookies;
         private readonly IAuthRepository _authRepository;
+        private readonly AuthenticationService _authenticationService;
 
-        public AuthService(IConfiguration configuration, IAuthRepository authRepository, Cookies cookies)
+        public AuthService(IConfiguration configuration, IAuthRepository authRepository, Cookies cookies, AuthenticationService authenticationService)
         {
             _configuration = configuration;
             var jwtKey = _configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key", "JWT key cannot be null");
             _jwt = new JWT(jwtKey);
             _authRepository = authRepository;
             _cookies = cookies;
+            _authenticationService = authenticationService;
         }
 
         public async Task<string> RegisterAsync(RegisterUserDto registerDto)
@@ -58,6 +60,11 @@ namespace WebApi.Services
             }
 
             return "Logged out successfully.";
+        }
+
+        public bool ValidateToken()
+        {
+            return _authenticationService.ValidateToken();
         }
     }
 }

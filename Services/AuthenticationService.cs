@@ -42,5 +42,22 @@ namespace WebApi.Services
 
             return user.Id;
         }
+        public bool ValidateToken(){
+            var httpContext = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is null");
+            string cookie = _cookies.GetCookie("token", httpContext.Request);
+            if (string.IsNullOrEmpty(cookie))
+            {
+                return false;
+            }
+             string email = _jwt.DecodeToken(cookie);
+            if (string.IsNullOrEmpty(email))
+            {
+                return false;
+            }
+            var user = _context.Users.FirstOrDefault(u => u.Email == email) ?? throw new UnauthorizedAccessException("User not found.");
+
+            return true;
+        }
+        
     }
 }
